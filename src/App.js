@@ -4,7 +4,7 @@ import ImageUpload from './ImageUpload';
 function App() {
   return (
     <div>
-      <h1>Image Upload and Annotation</h1>
+      <h1>Find It 🔎</h1>
       <ImageUpload />
     </div>
   );

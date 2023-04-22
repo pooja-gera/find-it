@@ -1,5 +1,7 @@
 import "./styles.css";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import locationPin from "./location-pin.png";
+import listItems from "./listItems";
 
 // React Dropzone
 import { useDropzone } from "react-dropzone";
@@ -11,7 +13,9 @@ const thumbsContainer = {
   flexDirection: "row",
   flexWrap: "wrap",
   marginTop: 16,
-  padding: 20
+  padding: 20,
+  alignItems: "center", 
+  justifyContent: "center"
 };
 
 const thumb = {
@@ -30,7 +34,8 @@ const thumb = {
 const thumbInner = {
   display: "flex",
   minWidth: 0,
-  overflow: "hidden"
+  overflow: "hidden",
+  align:"center"
 };
 
 const img = {
@@ -49,71 +54,80 @@ const thumbButton = {
 // It opens the editor and returns the modified file when done
 const editImage = (image, done) => {
 };
+  
 
 function App() {
-  const [files, setFiles] = useState([]);
-  const { getRootProps, getInputProps } = useDropzone({
-    accept: "image/*",
-    onDrop: (acceptedFiles) => {
-      setFiles(
-        acceptedFiles.map((file) =>
-          Object.assign(file, {
-            preview: URL.createObjectURL(file)
-          })
-        )
-      );
-    }
-  });
+    const [files, setFiles] = useState([]);
+    const pinRef = useRef(null);
+  
+   
+   // The main function which is handling what happens when the image is clicked 
+   
+    const handleImageClick = (event) => {
+      const image = event.target;
+      const rect = image.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const relativePos = { x, y };
+      const absolutePos = { x: event.clientX, y: event.clientY };
+      console.log("Relative Position:", relativePos);
+      console.log("Absolute Position:", absolutePos);
 
-  const thumbs = files.map((file, index) => (
-    <div style={thumb} key={file.name}>
-      <div style={thumbInner}>
-        <img src={file.preview} style={img} alt="" />
+      // Create a new pin image element and append it to the image container
+        const pinImg = new Image();
+        pinImg.src = locationPin;
+        pinImg.style.position = "absolute";
+        pinImg.style.left = `${x}px`;
+        pinImg.style.top = `${y}px`;
+        pinImg.style.width = "30px";
+        pinImg.style.height = "30px";
+        pinRef.current.appendChild(pinImg);
+    };
+  
+    const { getRootProps, getInputProps } = useDropzone({
+      accept: "image/*",
+      onDrop: (acceptedFiles) => {
+        setFiles(
+          acceptedFiles.map((file) =>
+            Object.assign(file, {
+              preview: URL.createObjectURL(file),
+            })
+          )
+        );
+      },
+    });
+  
+    const thumbs = files.map((file, index) => (
+      <div style={thumb} key={file.name}>
+        <div style={thumbInner}>
+          <img
+            src={file.preview}
+            style={img}
+            alt=""
+            onClick={handleImageClick}
+          />
+          <div ref={pinRef}></div>
+        </div>
       </div>
-      <button
-        style={thumbButton}
-        onClick={() =>
-          editImage(file, (output) => {
-            const updatedFiles = [...files];
-
-            // replace original image with new image
-            updatedFiles[index] = output;
-
-            // revoke preview URL for old image
-            if (file.preview) URL.revokeObjectURL(file.preview);
-
-            // set new preview URL
-            Object.assign(output, {
-              preview: URL.createObjectURL(output)
-            });
-
-            // update view
-            setFiles(updatedFiles);
-          })
-        }
-      >
-        Select Areas
-      </button>
-    </div>
-  ));
-
-  useEffect(
-    () => () => {
-      // Make sure to revoke the Object URL to avoid memory leaks
-      files.forEach((file) => URL.revokeObjectURL(file.preview));
-    },
-    [files]
-  );
-
-  return (
-    <section className="container">
-      <div {...getRootProps({ className: "dropzone" })}>
-        <input {...getInputProps()} />
-        <p>Drag 'n' drop some files here, or click to select files</p>
-      </div>
-      <aside style={thumbsContainer}>{thumbs}</aside>
-    </section>
-  );
-}
+    ));
+  
+    useEffect(() => {
+      // Clean up the generated preview URLs
+      return () => {
+        files.forEach((file) => URL.revokeObjectURL(file.preview));
+      };
+    }, [files]);
+  
+    return (
+      <section className="container">
+        <div {...getRootProps({ className: "dropzone" })}>
+          <input {...getInputProps()} />
+          <p>Drag 'n' drop or click to select an image of your closet</p>
+          <listItems />
+        </div>
+        <aside style={thumbsContainer}>{thumbs}</aside>
+      </section>
+    );
+  }  
 
 export default App;
